@@ -102,7 +102,7 @@ func TransformImagesV2(inputChannel <-chan Task, outputDirectory string) <-chan 
 
 			outputFile.Close()
 			fmt.Println("Grayscale image saved as", outputFilePath)
-			task.Image = grayImage
+			task.Image = resizedImage
 			task.Err = err
 			outputChannel <- task
 		}
@@ -110,34 +110,39 @@ func TransformImagesV2(inputChannel <-chan Task, outputDirectory string) <-chan 
 	return outputChannel
 }
 
-func LoadFilesV2(in <-chan Task, outputDir string, wg *sync.WaitGroup) {
+// func LoadFilesV2(in <-chan Task, outputDir string, wg *sync.WaitGroup) {
+// 	defer wg.Done()
+// 	for task := range in {
+// 		if task.Err != nil {
+// 			fmt.Println(task.Err)
+// 			continue
+// 		}
+
+// 		outputFilePath := filepath.Join(outputDir, filepath.Base(task.Path))
+// 		outputFile, err := os.Create(outputFilePath)
+// 		if err != nil {
+// 			fmt.Printf("Error creating output file %s: %v\n", outputFilePath, err)
+// 			continue
+// 		}
+// 		switch filepath.Ext(task.Path) {
+// 		case ".jpg", ".jpeg":
+// 			err = jpeg.Encode(outputFile, task.Image, nil)
+// 		case ".png":
+// 			err = png.Encode(outputFile, task.Image)
+// 		default:
+// 			fmt.Printf("Unsupported image format for file %s\n", task.Path)
+// 		}
+
+// 		outputFile.Close()
+// 		if err != nil {
+// 			fmt.Printf("Error encoding image %s: %v\n", outputFilePath, err)
+// 			continue
+// 		}
+// 		fmt.Println("Processed and saved:", outputFilePath)
+// 	}
+// }
+
+func LoadImagesV2(source, zipFileName string, wg *sync.WaitGroup) error {
 	defer wg.Done()
-	for task := range in {
-		if task.Err != nil {
-			fmt.Println(task.Err)
-			continue
-		}
-
-		outputFilePath := filepath.Join(outputDir, filepath.Base(task.Path))
-		outputFile, err := os.Create(outputFilePath)
-		if err != nil {
-			fmt.Printf("Error creating output file %s: %v\n", outputFilePath, err)
-			continue
-		}
-		switch filepath.Ext(task.Path) {
-		case ".jpg", ".jpeg":
-			err = jpeg.Encode(outputFile, task.Image, nil)
-		case ".png":
-			err = png.Encode(outputFile, task.Image)
-		default:
-			fmt.Printf("Unsupported image format for file %s\n", task.Path)
-		}
-
-		outputFile.Close()
-		if err != nil {
-			fmt.Printf("Error encoding image %s: %v\n", outputFilePath, err)
-			continue
-		}
-		fmt.Println("Processed and saved:", outputFilePath)
-	}
+	return utils.ZipFolder(source, zipFileName)
 }

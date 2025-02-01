@@ -13,10 +13,17 @@ func main() {
 		fmt.Println("Error extracting files:", err)
 		return
 	}
-	transformChan := etl.TransformImagesV2(extractChan, "black_white")
+	transformChannel := etl.TransformImagesV2(extractChan, "black_white")
+
+	for task := range transformChannel {
+		if task.Err != nil {
+			fmt.Println("Error processing: ", task.Err)
+		} else {
+			fmt.Println("Processed : ", task.Path)
+		}
+	}
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go etl.LoadFilesV2(transformChan, "black_white", &wg)
-	go etl.LoadImageFiles("/home/calibraint/etl-image-go/black_white/", "images_bw.zip")
+	go etl.LoadImagesV2("/home/calibraint/etl-image-go/black_white/", "images_bw.zip", &wg)
 	wg.Wait()
 }
