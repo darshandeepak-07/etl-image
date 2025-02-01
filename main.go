@@ -2,28 +2,21 @@ package main
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/darshandeepak-07/etl-image-go/etl"
 )
 
 func main() {
-	fmt.Println("---------------------------------")
-	fmt.Println("ETL Pipeline for Image Processing")
-	fmt.Println("---------------------------------")
-	fmt.Println("---------------------------------")
-
-	fmt.Println("Files Found")
-	fmt.Println("---------------------------------")
-	files := etl.ExtractImageFiles("images/")
-	for _, file := range files {
-		fmt.Println(file)
-	}
-	fmt.Println("---------------------------------")
-
-	etl.TransformImageFiles(files, "black_white")
-
-	err := etl.LoadImageFiles("/home/calibraint/etl-image-go/black_white/", "images_bw.zip")
+	extractChan, err := etl.ExtractImageFilesV2("images/")
 	if err != nil {
-		fmt.Println("Image files zipped successfully")
+		fmt.Println("Error extracting files:", err)
+		return
 	}
+	transformChan := etl.TransformImagesV2(extractChan, "black_white")
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go etl.LoadFilesV2(transformChan, "black_white", &wg)
+	go etl.LoadImageFiles("/home/calibraint/etl-image-go/black_white/", "images_bw.zip")
+	wg.Wait()
 }
