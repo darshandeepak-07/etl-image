@@ -1,11 +1,11 @@
 package etl
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"image/jpeg"
 	"image/png"
+	"log"
 	"os"
 	"path/filepath"
 	"sync"
@@ -19,7 +19,7 @@ type Task struct {
 	Err   error
 }
 
-func ExtractImageFilesV2(directory string) (<-chan Task, error) {
+func ExtractImage(directory string) (<-chan Task, error) {
 	out := make(chan Task)
 	go func() {
 		defer close(out)
@@ -33,17 +33,16 @@ func ExtractImageFilesV2(directory string) (<-chan Task, error) {
 			return nil
 		})
 		if err != nil {
-			fmt.Println("Error walking through directory:", err)
+			log.Printf("Error walking through directory: %v\n", err)
 		}
 	}()
-
 	return out, nil
 }
 
-func TransformImagesV2(inputChannel <-chan Task, outputDirectory string) <-chan Task {
+func TransforImage(inputChannel <-chan Task, outputDirectory string) <-chan Task {
 	err := os.MkdirAll(outputDirectory, os.ModePerm)
 	if err != nil {
-		fmt.Println("Error creating output directory:", err)
+		log.Printf("Error creating output directory: %v\n", err)
 	}
 	outputChannel := make(chan Task)
 
@@ -52,14 +51,14 @@ func TransformImagesV2(inputChannel <-chan Task, outputDirectory string) <-chan 
 		for task := range inputChannel {
 			file, err := os.Open(task.Path)
 			if err != nil {
-				fmt.Println("Error opening file:", task.Path, err)
+				log.Printf("Error opening file: %s %v\n", task.Path, err)
 				continue
 			}
 			defer file.Close()
 
 			decodedImage, format, decodeErr := image.Decode(file)
 			if decodeErr != nil {
-				fmt.Println("Error decoding image:", task.Path, decodeErr)
+				log.Printf("Error decoding image: %s %v\n", task.Path, decodeErr)
 				continue
 			}
 
@@ -78,7 +77,7 @@ func TransformImagesV2(inputChannel <-chan Task, outputDirectory string) <-chan 
 
 			outputFile, err := os.Create(outputFilePath)
 			if err != nil {
-				fmt.Println("Error creating output file:", outputFilePath, err)
+				log.Printf("Error creating output file: %s %v\n", outputFilePath, err)
 				continue
 			}
 
@@ -89,19 +88,19 @@ func TransformImagesV2(inputChannel <-chan Task, outputDirectory string) <-chan 
 			case "png":
 				err = png.Encode(outputFile, resizedImage)
 			default:
-				fmt.Println("Unsupported image format:", format)
+				log.Printf("Unsupported image format: %s", format)
 				outputFile.Close()
 				continue
 			}
 
 			if err != nil {
-				fmt.Println("Error encoding image:", outputFilePath, err)
+				log.Printf("Error encoding image: %s %v\n", outputFilePath, err)
 				outputFile.Close()
 				continue
 			}
 
 			outputFile.Close()
-			fmt.Println("Grayscale image saved as", outputFilePath)
+			log.Printf("Grayscale image saved as %s\n", outputFilePath)
 			task.Image = resizedImage
 			task.Err = err
 			outputChannel <- task
@@ -110,39 +109,7 @@ func TransformImagesV2(inputChannel <-chan Task, outputDirectory string) <-chan 
 	return outputChannel
 }
 
-// func LoadFilesV2(in <-chan Task, outputDir string, wg *sync.WaitGroup) {
-// 	defer wg.Done()
-// 	for task := range in {
-// 		if task.Err != nil {
-// 			fmt.Println(task.Err)
-// 			continue
-// 		}
-
-// 		outputFilePath := filepath.Join(outputDir, filepath.Base(task.Path))
-// 		outputFile, err := os.Create(outputFilePath)
-// 		if err != nil {
-// 			fmt.Printf("Error creating output file %s: %v\n", outputFilePath, err)
-// 			continue
-// 		}
-// 		switch filepath.Ext(task.Path) {
-// 		case ".jpg", ".jpeg":
-// 			err = jpeg.Encode(outputFile, task.Image, nil)
-// 		case ".png":
-// 			err = png.Encode(outputFile, task.Image)
-// 		default:
-// 			fmt.Printf("Unsupported image format for file %s\n", task.Path)
-// 		}
-
-// 		outputFile.Close()
-// 		if err != nil {
-// 			fmt.Printf("Error encoding image %s: %v\n", outputFilePath, err)
-// 			continue
-// 		}
-// 		fmt.Println("Processed and saved:", outputFilePath)
-// 	}
-// }
-
-func LoadImagesV2(source, zipFileName string, wg *sync.WaitGroup) error {
+func LoadImages(source, zipFileName string, wg *sync.WaitGroup) error {
 	defer wg.Done()
 	return utils.ZipFolder(source, zipFileName)
 }

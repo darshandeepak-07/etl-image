@@ -4,8 +4,10 @@ import (
 	"archive/zip"
 	"image"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
+
 	"github.com/nfnt/resize"
 )
 
@@ -19,6 +21,7 @@ func ZipFolder(sourceFolder, zipFileName string) error {
 	if err != nil {
 		return err
 	}
+	defer removeDirectory(filepath.Base(sourceFolder))
 	defer zipFile.Close()
 
 	zipWriter := zip.NewWriter(zipFile)
@@ -58,5 +61,16 @@ func ZipFolder(sourceFolder, zipFileName string) error {
 		_, err = io.Copy(zipWriterEntry, file)
 		return err
 	})
+	return err
+}
+
+func removeDirectory(directory string) error {
+	err := os.RemoveAll(directory)
+
+	if err == nil {
+		log.Printf("Removed directory : %s\n", directory)
+	} else {
+		log.Printf("Failed to remove directory : %s\n", directory)
+	}
 	return err
 }
