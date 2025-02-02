@@ -1,0 +1,4 @@
+dir :
+  input : "images/"
+  output : "black_white/"
+  zipFile : "images_bw.zip"
